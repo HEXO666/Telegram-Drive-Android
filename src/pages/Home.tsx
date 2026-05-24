@@ -1,22 +1,23 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButton,
   IonIcon, IonSpinner, IonRefresher, IonRefresherContent, IonFab,
-  IonFabButton, IonAlert, IonToast, IonLabel, IonSearchbar,
-  IonProgressBar, IonButtons, useIonActionSheet, RefresherEventDetail,
+  IonFabButton, IonAlert, IonToast, IonSearchbar,
+  IonButtons, useIonActionSheet, RefresherEventDetail,
 } from '@ionic/react';
 import {
   cloudUploadOutline, folderOutline, addOutline, logOutOutline,
   gridOutline, listOutline, hardwareChipOutline, menuOutline, trashOutline,
 } from 'ionicons/icons';
 import {
-  TgFile, TgFolder, getFiles, getFolders, uploadFile, deleteFile,
+  TgFile, TgFolder, getFiles, getFolders, deleteFile,
   clearSession, formatBytes, getMe,
 } from '../services/telegram';
 import FileCard from '../components/FileCard';
 import FileListItem from '../components/FileListItem';
 import MediaPreview from '../components/MediaPreview';
 import FolderDrawer from '../components/FolderDrawer';
+import UploadDrawer from '../components/UploadDrawer';
 import './Home.css';
 
 interface HomeProps {
@@ -32,11 +33,10 @@ const Home: React.FC<HomeProps> = ({ onLogout }) => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [previewFile, setPreviewFile] = useState<TgFile | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [toast, setToast] = useState<{ msg: string; color?: string } | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<TgFile | null>(null);
   const [userName, setUserName] = useState('');
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadDrawerOpen, setUploadDrawerOpen] = useState(false);
   const [presentAction] = useIonActionSheet();
 
   useEffect(() => {
@@ -84,20 +84,9 @@ const Home: React.FC<HomeProps> = ({ onLogout }) => {
     e.detail.complete();
   };
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploadProgress(0);
-    try {
-      await uploadFile(file, activeFolder?.id, (p) => setUploadProgress(p));
-      setToast({ msg: `${file.name} uploaded!`, color: 'success' });
-      await loadFiles();
-    } catch (e: any) {
-      setToast({ msg: e.message || 'Upload failed', color: 'danger' });
-    } finally {
-      setUploadProgress(null);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    }
+  const handleUploadDone = async () => {
+    setToast({ msg: 'Upload complete!', color: 'success' });
+    await loadFiles();
   };
 
   const handleDelete = async (f: TgFile) => {
@@ -170,12 +159,6 @@ const Home: React.FC<HomeProps> = ({ onLogout }) => {
             showCancelButton="focus"
           />
         </IonToolbar>
-        {uploadProgress !== null && (
-          <IonToolbar className="progress-toolbar">
-            <IonProgressBar value={uploadProgress / 100} color="primary" />
-            <IonLabel className="progress-label">Uploading… {uploadProgress}%</IonLabel>
-          </IonToolbar>
-        )}
       </IonHeader>
 
       <IonContent className="home-content" fullscreen>
@@ -210,11 +193,17 @@ const Home: React.FC<HomeProps> = ({ onLogout }) => {
       </IonContent>
 
       <IonFab vertical="bottom" horizontal="end" slot="fixed" className="upload-fab">
-        <IonFabButton onClick={() => fileInputRef.current?.click()} color="primary">
+        <IonFabButton onClick={() => setUploadDrawerOpen(true)} color="primary">
           <IonIcon icon={addOutline} />
         </IonFabButton>
       </IonFab>
-      <input ref={fileInputRef} type="file" style={{ display: 'none' }} onChange={handleUpload} />
+
+      <UploadDrawer
+        isOpen={uploadDrawerOpen}
+        folderId={activeFolder?.id}
+        onClose={() => setUploadDrawerOpen(false)}
+        onDone={handleUploadDone}
+      />
 
       <FolderDrawer
         isOpen={drawerOpen}
