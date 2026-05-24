@@ -22,7 +22,9 @@ const FileListItem: React.FC<Props> = ({ file, onClick, onDelete }) => {
   useEffect(() => {
     if (!isMedia) return;
     let cancelled = false;
-    getThumbnail(file).then(url => { if (!cancelled) setThumb(url); });
+    getThumbnail(file)
+      .then(url => { if (!cancelled) setThumb(url); })
+      .catch(() => {});
     return () => { cancelled = true; };
   }, [file.id]);
 
@@ -34,7 +36,6 @@ const FileListItem: React.FC<Props> = ({ file, onClick, onDelete }) => {
   return (
     <div className="file-list-item ion-activatable" onClick={onClick}>
       <IonRippleEffect />
-
       <div className="fli-icon-wrap" style={{ background: thumb ? 'transparent' : `${color}20` }}>
         {thumb ? (
           <div className="fli-thumb-wrap">
@@ -49,12 +50,10 @@ const FileListItem: React.FC<Props> = ({ file, onClick, onDelete }) => {
           <IonIcon icon={icon} style={{ color }} className="fli-icon" />
         )}
       </div>
-
       <div className="fli-info">
         <p className="fli-name">{file.name}</p>
         <p className="fli-meta">{formatBytes(file.size)} · {date}</p>
       </div>
-
       <button className="fli-delete" onClick={handleDelete}>
         <IonIcon icon={trashOutline} />
       </button>

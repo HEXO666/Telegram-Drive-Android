@@ -17,17 +17,14 @@ const FileCard: React.FC<FileCardProps> = ({ file, onClick, onDelete }) => {
   const isVideo = file.mimeType.startsWith('video/');
 
   const [thumb, setThumb] = useState<string | null>(null);
-  const [thumbLoading, setThumbLoading] = useState(isMedia);
+  const [loading, setLoading] = useState(isMedia);
 
   useEffect(() => {
     if (!isMedia) return;
     let cancelled = false;
-    getThumbnail(file).then(url => {
-      if (!cancelled) {
-        setThumb(url);
-        setThumbLoading(false);
-      }
-    });
+    getThumbnail(file)
+      .then(url => { if (!cancelled) { setThumb(url); setLoading(false); } })
+      .catch(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [file.id]);
 
@@ -39,22 +36,20 @@ const FileCard: React.FC<FileCardProps> = ({ file, onClick, onDelete }) => {
   return (
     <div className="file-card ion-activatable" onClick={onClick}>
       <IonRippleEffect />
-      <div className="file-card-thumb" style={{ background: `${color}18`, borderColor: `${color}30` }}>
+      <div className="file-card-thumb" style={{ borderColor: `${color}30`, background: thumb ? '#000' : `${color}18` }}>
         {thumb ? (
           <>
             <img src={thumb} alt={file.name} className="file-card-thumb-img" />
             {isVideo && <div className="file-card-play-badge">▶</div>}
           </>
+        ) : loading ? (
+          <div className="file-card-shimmer" />
         ) : (
           <>
             <div className="file-card-icon-wrap" style={{ background: `${color}22` }}>
-              {thumbLoading ? (
-                <div className="file-card-thumb-shimmer" />
-              ) : (
-                <IonIcon icon={icon} style={{ color }} className="file-card-icon" />
-              )}
+              <IonIcon icon={icon} style={{ color }} className="file-card-icon" />
             </div>
-            {isMedia && !thumbLoading && (
+            {isMedia && (
               <div className="file-card-media-badge" style={{ background: color }}>
                 {isVideo ? 'VID' : 'IMG'}
               </div>

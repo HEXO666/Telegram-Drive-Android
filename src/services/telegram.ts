@@ -13,7 +13,6 @@ export interface TgFile {
   size: number;
   mimeType: string;
   date: number;
-  thumb?: string;
   folderId?: string;
 }
 
@@ -24,6 +23,11 @@ export interface TgFolder {
 }
 
 let client: TelegramClient | null = null;
+
+// Cache raw media objects so getThumbnail never needs a getMessages call
+const mediaCache = new Map<string, Api.TypeMessageMedia>();
+// Cache rendered thumbnail data URLs
+const thumbCache = new Map<string, string | null>();
 
 function getSession(): StringSession {
   const saved = localStorage.getItem(SESSION_KEY) || '';
@@ -40,6 +44,8 @@ export function isSessionSaved(): boolean {
 
 export function clearSession() {
   localStorage.removeItem(SESSION_KEY);
+  mediaCache.clear();
+  thumbCache.clear();
   client = null;
 }
 
@@ -98,32 +104,18 @@ export async function getFolders(): Promise<TgFolder[]> {
     if (d.isChannel && d.entity) {
       const e = d.entity as Api.Channel;
       if (e.megagroup === false && e.broadcast === false) {
-        folders.push({
-          id: String(e.id),
-          name: d.title || 'Unnamed',
-          accessHash: String(e.accessHash),
-        });
+        folders.push({ id: String(e.id), name: d.title || 'Unnamed', accessHash: String(e.accessHash) });
       }
-      // also include owned channels used as folders
       if (e.creator) {
-        folders.push({
-          id: String(e.id),
-          name: d.title || 'Unnamed',
-          accessHash: String(e.accessHash),
-        });
+        folders.push({ id: String(e.id), name: d.title || 'Unnamed', accessHash: String(e.accessHash) });
       }
     }
   }
-  // deduplicate by id
   const seen = new Set<string>();
-  return folders.filter(f => {
-    if (seen.has(f.id)) return false;
-    seen.add(f.id);
-    return true;
-  });
+  return folders.filter(f => { if (seen.has(f.id)) return false; seen.add(f.id); return true; });
 }
 
-async function buildFileFromMessage(msg: Api.Message, folderId?: string): Promise<TgFile | null> {
+function buildFileFromMessage(msg: Api.Message, folderId?: string): TgFile | null {
   if (!msg.media) return null;
   let name = 'Unknown';
   let size = 0;
@@ -134,16 +126,9 @@ async function buildFileFromMessage(msg: Api.Message, folderId?: string): Promis
     size = Number(doc.size);
     mimeType = doc.mimeType || mimeType;
     for (const attr of doc.attributes) {
-      if (attr instanceof Api.DocumentAttributeFilename) {
-        name = attr.fileName;
-        break;
-      }
-      if (attr instanceof Api.DocumentAttributeAudio) {
-        name = `audio_${msg.id}.ogg`;
-      }
-      if (attr instanceof Api.DocumentAttributeVideo) {
-        name = `video_${msg.id}.mp4`;
-      }
+      if (attr instanceof Api.DocumentAttributeFilename) { name = attr.fileName; break; }
+      if (attr instanceof Api.DocumentAttributeAudio) name = `audio_${msg.id}.ogg`;
+      if (attr instanceof Api.DocumentAttributeVideo) name = `video_${msg.id}.mp4`;
     }
   } else if (msg.media instanceof Api.MessageMediaPhoto) {
     name = `photo_${msg.id}.jpg`;
@@ -170,8 +155,12 @@ export async function getFiles(folderId?: string): Promise<TgFile[]> {
   const files: TgFile[] = [];
   for (const msg of messages) {
     if (!(msg instanceof Api.Message)) continue;
-    const f = await buildFileFromMessage(msg, folderId);
-    if (f) files.push(f);
+    const f = buildFileFromMessage(msg, folderId);
+    if (f) {
+      // Cache raw media so getThumbnail never needs another getMessages call
+      if (msg.media) mediaCache.set(f.id, msg.media);
+      files.push(f);
+    }
   }
   return files;
 }
@@ -180,11 +169,46 @@ async function resolvePeer(folderId: string) {
   const c = await getClient();
   const dialogs = await c.getDialogs({ limit: 100 });
   for (const d of dialogs) {
-    if (d.entity && String((d.entity as any).id) === folderId) {
-      return d.entity;
-    }
+    if (d.entity && String((d.entity as any).id) === folderId) return d.entity;
   }
   throw new Error('Folder not found');
+}
+
+// Convert raw buffer to base64 data URL safely
+function bufToDataUrl(buf: Buffer | Uint8Array): string {
+  const bytes = buf instanceof Uint8Array ? buf : new Uint8Array(buf);
+  let b64 = '';
+  const chunk = 8192;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    b64 += String.fromCharCode(...Array.from(bytes.subarray(i, i + chunk)));
+  }
+  return `data:image/jpeg;base64,${btoa(b64)}`;
+}
+
+export async function getThumbnail(file: TgFile): Promise<string | null> {
+  if (thumbCache.has(file.id)) return thumbCache.get(file.id)!;
+
+  const isMedia = file.mimeType.startsWith('image/') || file.mimeType.startsWith('video/');
+  if (!isMedia) { thumbCache.set(file.id, null); return null; }
+
+  // Use cached media — no extra API call needed
+  const media = mediaCache.get(file.id);
+  if (!media) { thumbCache.set(file.id, null); return null; }
+
+  try {
+    const c = await getClient();
+    const buf = await c.downloadMedia(media, { thumb: 0 });
+    if (!buf || typeof buf === 'string' || (buf as any).length === 0) {
+      thumbCache.set(file.id, null);
+      return null;
+    }
+    const dataUrl = bufToDataUrl(buf as Buffer);
+    thumbCache.set(file.id, dataUrl);
+    return dataUrl;
+  } catch {
+    thumbCache.set(file.id, null);
+    return null;
+  }
 }
 
 export async function uploadFile(
@@ -206,63 +230,25 @@ export async function uploadFile(
 
 export async function downloadFile(tgFile: TgFile, folderId?: string): Promise<Uint8Array> {
   const c = await getClient();
-  const peer = folderId ? await resolvePeer(folderId) : 'me';
-  const [msg] = await c.getMessages(peer, { ids: [tgFile.messageId] });
-  if (!(msg instanceof Api.Message) || !msg.media) throw new Error('Message not found');
-  const buf = await c.downloadMedia(msg.media, {});
+  // Use cached media first, fall back to fetching the message
+  let media = mediaCache.get(tgFile.id);
+  if (!media) {
+    const peer = folderId ? await resolvePeer(folderId) : 'me';
+    const [msg] = await c.getMessages(peer, { ids: [tgFile.messageId] });
+    if (!(msg instanceof Api.Message) || !msg.media) throw new Error('Message not found');
+    media = msg.media;
+  }
+  const buf = await c.downloadMedia(media, {});
   if (!buf) throw new Error('Download failed');
   return buf as Uint8Array;
-}
-
-// In-memory thumbnail cache — survives re-renders, cleared on logout
-const thumbCache = new Map<string, string | null>();
-
-export function clearThumbCache() {
-  thumbCache.clear();
-}
-
-export async function getThumbnail(file: TgFile): Promise<string | null> {
-  const cacheKey = file.id;
-  if (thumbCache.has(cacheKey)) return thumbCache.get(cacheKey)!;
-
-  const isMedia = file.mimeType.startsWith('image/') || file.mimeType.startsWith('video/');
-  if (!isMedia) {
-    thumbCache.set(cacheKey, null);
-    return null;
-  }
-
-  try {
-    const c = await getClient();
-    const peer = file.folderId ? await resolvePeer(file.folderId) : 'me';
-    const [msg] = await c.getMessages(peer, { ids: [file.messageId] });
-    if (!(msg instanceof Api.Message) || !msg.media) {
-      thumbCache.set(cacheKey, null);
-      return null;
-    }
-    const buf = await c.downloadMedia(msg.media, { thumb: 0 });
-    if (!buf || (buf as any).length === 0) {
-      thumbCache.set(cacheKey, null);
-      return null;
-    }
-    const bytes = buf as Uint8Array;
-    let b64 = '';
-    const chunk = 8192;
-    for (let i = 0; i < bytes.length; i += chunk) {
-      b64 += String.fromCharCode(...bytes.subarray(i, i + chunk));
-    }
-    const dataUrl = `data:image/jpeg;base64,${btoa(b64)}`;
-    thumbCache.set(cacheKey, dataUrl);
-    return dataUrl;
-  } catch {
-    thumbCache.set(cacheKey, null);
-    return null;
-  }
 }
 
 export async function deleteFile(tgFile: TgFile, folderId?: string): Promise<void> {
   const c = await getClient();
   const peer = folderId ? await resolvePeer(folderId) : 'me';
   await c.deleteMessages(peer, [tgFile.messageId], { revoke: true });
+  mediaCache.delete(tgFile.id);
+  thumbCache.delete(tgFile.id);
 }
 
 export function formatBytes(bytes: number): string {
