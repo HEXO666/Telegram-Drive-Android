@@ -214,6 +214,51 @@ export async function downloadFile(tgFile: TgFile, folderId?: string): Promise<U
   return buf as Uint8Array;
 }
 
+// In-memory thumbnail cache — survives re-renders, cleared on logout
+const thumbCache = new Map<string, string | null>();
+
+export function clearThumbCache() {
+  thumbCache.clear();
+}
+
+export async function getThumbnail(file: TgFile): Promise<string | null> {
+  const cacheKey = file.id;
+  if (thumbCache.has(cacheKey)) return thumbCache.get(cacheKey)!;
+
+  const isMedia = file.mimeType.startsWith('image/') || file.mimeType.startsWith('video/');
+  if (!isMedia) {
+    thumbCache.set(cacheKey, null);
+    return null;
+  }
+
+  try {
+    const c = await getClient();
+    const peer = file.folderId ? await resolvePeer(file.folderId) : 'me';
+    const [msg] = await c.getMessages(peer, { ids: [file.messageId] });
+    if (!(msg instanceof Api.Message) || !msg.media) {
+      thumbCache.set(cacheKey, null);
+      return null;
+    }
+    const buf = await c.downloadMedia(msg.media, { thumb: 0 });
+    if (!buf || (buf as any).length === 0) {
+      thumbCache.set(cacheKey, null);
+      return null;
+    }
+    const bytes = buf as Uint8Array;
+    let b64 = '';
+    const chunk = 8192;
+    for (let i = 0; i < bytes.length; i += chunk) {
+      b64 += String.fromCharCode(...bytes.subarray(i, i + chunk));
+    }
+    const dataUrl = `data:image/jpeg;base64,${btoa(b64)}`;
+    thumbCache.set(cacheKey, dataUrl);
+    return dataUrl;
+  } catch {
+    thumbCache.set(cacheKey, null);
+    return null;
+  }
+}
+
 export async function deleteFile(tgFile: TgFile, folderId?: string): Promise<void> {
   const c = await getClient();
   const peer = folderId ? await resolvePeer(folderId) : 'me';

@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { IonIcon, IonRippleEffect } from '@ionic/react';
 import { trashOutline } from 'ionicons/icons';
-import { TgFile, formatBytes, getFileIcon, getMimeColor } from '../services/telegram';
+import { TgFile, formatBytes, getFileIcon, getMimeColor, getThumbnail } from '../services/telegram';
 import './FileCard.css';
 
 interface FileCardProps {
@@ -13,8 +13,23 @@ interface FileCardProps {
 const FileCard: React.FC<FileCardProps> = ({ file, onClick, onDelete }) => {
   const color = getMimeColor(file.mimeType);
   const icon = getFileIcon(file.mimeType);
-  const isImage = file.mimeType.startsWith('image/');
+  const isMedia = file.mimeType.startsWith('image/') || file.mimeType.startsWith('video/');
   const isVideo = file.mimeType.startsWith('video/');
+
+  const [thumb, setThumb] = useState<string | null>(null);
+  const [thumbLoading, setThumbLoading] = useState(isMedia);
+
+  useEffect(() => {
+    if (!isMedia) return;
+    let cancelled = false;
+    getThumbnail(file).then(url => {
+      if (!cancelled) {
+        setThumb(url);
+        setThumbLoading(false);
+      }
+    });
+    return () => { cancelled = true; };
+  }, [file.id]);
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -25,13 +40,26 @@ const FileCard: React.FC<FileCardProps> = ({ file, onClick, onDelete }) => {
     <div className="file-card ion-activatable" onClick={onClick}>
       <IonRippleEffect />
       <div className="file-card-thumb" style={{ background: `${color}18`, borderColor: `${color}30` }}>
-        <div className="file-card-icon-wrap" style={{ background: `${color}22` }}>
-          <IonIcon icon={icon} style={{ color }} className="file-card-icon" />
-        </div>
-        {(isImage || isVideo) && (
-          <div className="file-card-media-badge" style={{ background: color }}>
-            {isVideo ? 'VID' : 'IMG'}
-          </div>
+        {thumb ? (
+          <>
+            <img src={thumb} alt={file.name} className="file-card-thumb-img" />
+            {isVideo && <div className="file-card-play-badge">▶</div>}
+          </>
+        ) : (
+          <>
+            <div className="file-card-icon-wrap" style={{ background: `${color}22` }}>
+              {thumbLoading ? (
+                <div className="file-card-thumb-shimmer" />
+              ) : (
+                <IonIcon icon={icon} style={{ color }} className="file-card-icon" />
+              )}
+            </div>
+            {isMedia && !thumbLoading && (
+              <div className="file-card-media-badge" style={{ background: color }}>
+                {isVideo ? 'VID' : 'IMG'}
+              </div>
+            )}
+          </>
         )}
       </div>
       <div className="file-card-info">
