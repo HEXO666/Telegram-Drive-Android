@@ -1,0 +1,116 @@
+.preview-modal {
+  --background: #080e14;
+}
+
+.preview-header ion-toolbar,
+.preview-toolbar {
+  --background: rgba(8, 14, 20, 0.95);
+  --border-color: rgba(255,255,255,0.08);
+}
+
+.preview-title {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  font-size: 14px !important;
+}
+
+.preview-title span:first-child {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+  display: block;
+}
+
+.preview-size {
+  font-size: 11px !important;
+  color: rgba(255,255,255,0.4) !important;
+  font-weight: 400 !important;
+}
+
+.preview-content {
+  --background: #080e14;
+}
+
+.preview-loading,
+.preview-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 70vh;
+  gap: 16px;
+  color: rgba(255,255,255,0.5);
+}
+
+.preview-image-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 70vh;
+  padding: 16px;
+}
+
+.preview-image {
+  max-width: 100%;
+  max-height: 80vh;
+  border-radius: 12px;
+  object-fit: contain;
+}
+
+.preview-video-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 70vh;
+  padding: 16px;
+}
+
+.preview-video {
+  width: 100%;
+  max-height: 80vh;
+  border-radius: 12px;
+}
+
+.preview-audio-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 70vh;
+  padding: 24px;
+}
+
+.preview-audio-card {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 24px;
+  padding: 40px 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+}
+
+.preview-audio-icon {
+  font-size: 64px;
+  filter: drop-shadow(0 0 20px rgba(156, 39, 176, 0.5));
+}
+
+.preview-audio-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.85);
+  text-align: center;
+  margin: 0;
+}
+
+.preview-audio {
+  width: 100%;
+  border-radius: 12px;
+}

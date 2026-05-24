@@ -1,0 +1,144 @@
+.home-page {
+  --background: #0f1923;
+}
+
+.home-header ion-toolbar {
+  --background: rgba(15, 25, 35, 0.95);
+  --border-color: rgba(255,255,255,0.08);
+}
+
+.home-toolbar {
+  --min-height: 56px;
+}
+
+.home-title {
+  font-size: 15px !important;
+  font-weight: 600;
+}
+
+.folder-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #fff;
+}
+
+.folder-badge ion-icon {
+  font-size: 16px;
+  color: #2196f3;
+}
+
+.menu-btn {
+  --color: rgba(255,255,255,0.75);
+}
+
+.search-toolbar {
+  --padding-start: 8px;
+  --padding-end: 8px;
+  --min-height: 52px;
+}
+
+.home-searchbar {
+  --background: rgba(255,255,255,0.08);
+  --color: #fff;
+  --placeholder-color: rgba(255,255,255,0.35);
+  --icon-color: rgba(255,255,255,0.4);
+  --border-radius: 14px;
+  --box-shadow: none;
+  padding: 0 !important;
+}
+
+.progress-toolbar {
+  --min-height: 32px;
+  --padding-start: 12px;
+  --padding-end: 12px;
+}
+
+.progress-label {
+  font-size: 11px;
+  color: rgba(255,255,255,0.5);
+  margin-top: 4px;
+  display: block;
+}
+
+.home-content {
+  --background: #0f1923;
+  --padding-bottom: 100px;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 60vh;
+  gap: 16px;
+  color: rgba(255,255,255,0.5);
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 60vh;
+  gap: 12px;
+  padding: 32px;
+  text-align: center;
+}
+
+.empty-icon {
+  font-size: 72px;
+  color: rgba(33, 150, 243, 0.35);
+}
+
+.empty-state h3 {
+  font-size: 20px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.8);
+  margin: 0;
+}
+
+.empty-state p {
+  font-size: 14px;
+  color: rgba(255,255,255,0.4);
+  margin: 0;
+}
+
+/* Grid layout */
+.file-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  padding: 12px;
+}
+
+@media (min-width: 480px) {
+  .file-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* List layout */
+.file-list {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 12px;
+  gap: 2px;
+}
+
+/* FAB */
+.upload-fab {
+  margin-bottom: env(safe-area-inset-bottom);
+}
+
+.upload-fab ion-fab-button {
+  --background: linear-gradient(135deg, #1976d2, #2196f3);
+  --box-shadow: 0 6px 24px rgba(33, 150, 243, 0.5);
+  width: 60px;
+  height: 60px;
+}
+
+.upload-fab ion-fab-button ion-icon {
+  font-size: 28px;
+}

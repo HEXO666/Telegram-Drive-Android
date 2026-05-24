@@ -1,0 +1,71 @@
+.file-list-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 14px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: background 0.15s;
+}
+
+.file-list-item:active {
+  background: rgba(255,255,255,0.05);
+}
+
+.fli-icon-wrap {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.fli-icon {
+  font-size: 22px;
+}
+
+.fli-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.fli-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.9);
+  margin: 0 0 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fli-meta {
+  font-size: 12px;
+  color: rgba(255,255,255,0.4);
+  margin: 0;
+}
+
+.fli-delete {
+  background: transparent;
+  border: none;
+  color: rgba(239, 83, 80, 0.6);
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.fli-delete:active {
+  background: rgba(239, 83, 80, 0.15);
+  color: #ef5350;
+}
