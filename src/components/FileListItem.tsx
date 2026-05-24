@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { IonIcon, IonRippleEffect } from '@ionic/react';
 import { trashOutline, playCircleOutline } from 'ionicons/icons';
-import { TgFile, formatBytes, getFileIcon, getMimeColor, getThumbnail } from '../services/telegram';
+import { TgFile, formatBytes, getThumbnail } from '../services/telegram';
+import FileTypeIcon from './FileTypeIcon';
 import './FileListItem.css';
 
 interface Props {
@@ -11,8 +12,6 @@ interface Props {
 }
 
 const FileListItem: React.FC<Props> = ({ file, onClick, onDelete }) => {
-  const color = getMimeColor(file.mimeType);
-  const icon = getFileIcon(file.mimeType);
   const isMedia = file.mimeType.startsWith('image/') || file.mimeType.startsWith('video/');
   const isVideo = file.mimeType.startsWith('video/');
   const date = new Date(file.date * 1000).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
@@ -36,7 +35,8 @@ const FileListItem: React.FC<Props> = ({ file, onClick, onDelete }) => {
   return (
     <div className="file-list-item ion-activatable" onClick={onClick}>
       <IonRippleEffect />
-      <div className="fli-icon-wrap" style={{ background: thumb ? 'transparent' : `${color}20` }}>
+
+      <div className="fli-icon-wrap">
         {thumb ? (
           <div className="fli-thumb-wrap">
             <img src={thumb} alt={file.name} className="fli-thumb-img" />
@@ -47,13 +47,15 @@ const FileListItem: React.FC<Props> = ({ file, onClick, onDelete }) => {
             )}
           </div>
         ) : (
-          <IonIcon icon={icon} style={{ color }} className="fli-icon" />
+          <FileTypeIcon filename={file.name} mimeType={file.mimeType} size="sm" />
         )}
       </div>
+
       <div className="fli-info">
         <p className="fli-name">{file.name}</p>
         <p className="fli-meta">{formatBytes(file.size)} · {date}</p>
       </div>
+
       <button className="fli-delete" onClick={handleDelete}>
         <IonIcon icon={trashOutline} />
       </button>

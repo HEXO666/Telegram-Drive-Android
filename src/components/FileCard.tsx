@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { IonIcon, IonRippleEffect } from '@ionic/react';
 import { trashOutline } from 'ionicons/icons';
-import { TgFile, formatBytes, getFileIcon, getMimeColor, getThumbnail } from '../services/telegram';
+import { TgFile, formatBytes, getThumbnail } from '../services/telegram';
+import FileTypeIcon from './FileTypeIcon';
 import './FileCard.css';
 
 interface FileCardProps {
@@ -11,8 +12,6 @@ interface FileCardProps {
 }
 
 const FileCard: React.FC<FileCardProps> = ({ file, onClick, onDelete }) => {
-  const color = getMimeColor(file.mimeType);
-  const icon = getFileIcon(file.mimeType);
   const isMedia = file.mimeType.startsWith('image/') || file.mimeType.startsWith('video/');
   const isVideo = file.mimeType.startsWith('video/');
 
@@ -36,7 +35,8 @@ const FileCard: React.FC<FileCardProps> = ({ file, onClick, onDelete }) => {
   return (
     <div className="file-card ion-activatable" onClick={onClick}>
       <IonRippleEffect />
-      <div className="file-card-thumb" style={{ borderColor: `${color}30`, background: thumb ? '#000' : `${color}18` }}>
+
+      <div className="file-card-thumb">
         {thumb ? (
           <>
             <img src={thumb} alt={file.name} className="file-card-thumb-img" />
@@ -45,22 +45,15 @@ const FileCard: React.FC<FileCardProps> = ({ file, onClick, onDelete }) => {
         ) : loading ? (
           <div className="file-card-shimmer" />
         ) : (
-          <>
-            <div className="file-card-icon-wrap" style={{ background: `${color}22` }}>
-              <IonIcon icon={icon} style={{ color }} className="file-card-icon" />
-            </div>
-            {isMedia && (
-              <div className="file-card-media-badge" style={{ background: color }}>
-                {isVideo ? 'VID' : 'IMG'}
-              </div>
-            )}
-          </>
+          <FileTypeIcon filename={file.name} mimeType={file.mimeType} size="lg" />
         )}
       </div>
+
       <div className="file-card-info">
         <p className="file-card-name">{file.name}</p>
         <p className="file-card-size">{formatBytes(file.size)}</p>
       </div>
+
       <button className="file-card-delete" onClick={handleDelete}>
         <IonIcon icon={trashOutline} />
       </button>

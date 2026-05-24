@@ -131,8 +131,17 @@ function buildFileFromMessage(msg: Api.Message, folderId?: string): TgFile | nul
       if (attr instanceof Api.DocumentAttributeVideo) name = `video_${msg.id}.mp4`;
     }
   } else if (msg.media instanceof Api.MessageMediaPhoto) {
-    name = `photo_${msg.id}.jpg`;
+    // Caption stores the original filename (set during upload), fall back to generic name
+    name = (msg.message && msg.message.trim()) ? msg.message.trim() : `photo_${msg.id}.jpg`;
     mimeType = 'image/jpeg';
+    // Photos don't have a file size in the API, estimate from largest size
+    const photo = msg.media.photo;
+    if (photo instanceof Api.Photo) {
+      const largest = photo.sizes
+        .filter((s): s is Api.PhotoSize => s instanceof Api.PhotoSize)
+        .sort((a, b) => b.size - a.size)[0];
+      if (largest) size = largest.size;
+    }
   } else {
     return null;
   }
@@ -219,13 +228,26 @@ export async function uploadFile(
   const c = await getClient();
   const peer = folderId ? await resolvePeer(folderId) : 'me';
   const buffer = await file.arrayBuffer();
-  await c.sendFile(peer, {
-    file: Buffer.from(buffer),
-    attributes: [new Api.DocumentAttributeFilename({ fileName: file.name })],
-    progressCallback: (progress: number) => {
-      onProgress?.(Math.round(progress * 100));
-    },
-  });
+  const isImage = file.type.startsWith('image/') && !file.type.includes('gif');
+
+  if (isImage) {
+    // Upload as native Telegram photo — Telegram generates thumbnails automatically.
+    // Store original filename in the caption so we can recover it on display.
+    await c.sendFile(peer, {
+      file: Buffer.from(buffer),
+      caption: file.name,
+      forceDocument: false,
+      progressCallback: (progress: number) => { onProgress?.(Math.round(progress * 100)); },
+    });
+  } else {
+    // All other types (video, audio, PDF, APK, ZIP …) sent as documents with filename.
+    await c.sendFile(peer, {
+      file: Buffer.from(buffer),
+      forceDocument: true,
+      attributes: [new Api.DocumentAttributeFilename({ fileName: file.name })],
+      progressCallback: (progress: number) => { onProgress?.(Math.round(progress * 100)); },
+    });
+  }
 }
 
 export async function downloadFile(tgFile: TgFile, folderId?: string): Promise<Uint8Array> {
