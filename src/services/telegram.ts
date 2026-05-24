@@ -1,6 +1,7 @@
 import { TelegramClient } from 'telegram';
 import { StringSession } from 'telegram/sessions';
 import { Api } from 'telegram/tl';
+import { CustomFile } from 'telegram/client/uploads';
 
 const API_ID = parseInt(import.meta.env.VITE_TG_API_ID || '0');
 const API_HASH = import.meta.env.VITE_TG_API_HASH || '';
@@ -227,24 +228,44 @@ export async function uploadFile(
 ): Promise<void> {
   const c = await getClient();
   const peer = folderId ? await resolvePeer(folderId) : 'me';
-  const buffer = await file.arrayBuffer();
-  const isImage = file.type.startsWith('image/') && !file.type.includes('gif');
+  const buf = Buffer.from(new Uint8Array(await file.arrayBuffer()));
+
+  const { getMimeFromFile } = await import('../components/FileIcon');
+  const mime = getMimeFromFile(file.name, file.type);
+
+  // Build a reliable filename — Android often returns empty names or names without extension
+  const mimeExt: Record<string, string> = {
+    'image/jpeg': 'jpg', 'image/png': 'png', 'image/gif': 'gif',
+    'image/webp': 'webp', 'image/bmp': 'bmp',
+    'video/mp4': 'mp4', 'video/x-matroska': 'mkv',
+    'audio/mpeg': 'mp3', 'audio/ogg': 'ogg', 'audio/wav': 'wav',
+    'application/pdf': 'pdf',
+    'application/epub+zip': 'epub', 'application/x-mobipocket-ebook': 'mobi',
+  };
+  let fileName = file.name || '';
+  if (!fileName || fileName === 'blob' || fileName === 'document') {
+    const ext = mimeExt[mime] || mime.split('/')[1] || 'bin';
+    fileName = `upload_${Date.now()}.${ext}`;
+  } else if (!fileName.includes('.')) {
+    const ext = mimeExt[mime] || mime.split('/')[1] || 'bin';
+    fileName = `${fileName}.${ext}`;
+  }
+
+  const cf = new CustomFile(fileName, buf.length, '', buf);
+  const isImage = mime.startsWith('image/') && !mime.includes('gif');
 
   if (isImage) {
-    // Upload as native Telegram photo — Telegram generates thumbnails automatically.
-    // Store original filename in the caption so we can recover it on display.
     await c.sendFile(peer, {
-      file: Buffer.from(buffer),
-      caption: file.name,
+      file: cf,
+      caption: fileName,
       forceDocument: false,
       progressCallback: (progress: number) => { onProgress?.(Math.round(progress * 100)); },
     });
   } else {
-    // All other types (video, audio, PDF, APK, ZIP …) sent as documents with filename.
     await c.sendFile(peer, {
-      file: Buffer.from(buffer),
+      file: cf,
       forceDocument: true,
-      attributes: [new Api.DocumentAttributeFilename({ fileName: file.name })],
+      attributes: [new Api.DocumentAttributeFilename({ fileName })],
       progressCallback: (progress: number) => { onProgress?.(Math.round(progress * 100)); },
     });
   }
