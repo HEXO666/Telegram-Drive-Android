@@ -19,75 +19,42 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-bottom: 1px solid;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
   position: relative;
   overflow: hidden;
+  background: rgba(0,0,0,0.2);
 }
 
-.file-card-thumb-img {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 0;
+.file-card-thumb svg {
+  width: 60%;
+  height: 60%;
 }
 
-.file-card-play-badge {
+.file-card-eye {
   position: absolute;
-  inset: 0;
+  bottom: 6px;
+  right: 6px;
+  background: rgba(0,0,0,0.55);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0,0,0,0.35);
-  font-size: 24px;
+  cursor: pointer;
   color: rgba(255,255,255,0.9);
+  font-size: 16px;
+  padding: 0;
+  backdrop-filter: blur(4px);
 }
 
-.file-card-shimmer {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(90deg,
-    rgba(255,255,255,0.04) 0%,
-    rgba(255,255,255,0.10) 40%,
-    rgba(255,255,255,0.04) 80%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.2s ease-in-out infinite;
-}
-
-@keyframes shimmer {
-  0%   { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
-
-.file-card-icon-wrap {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.file-card-icon {
-  font-size: 28px;
-}
-
-.file-card-media-badge {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  font-size: 9px;
-  font-weight: 700;
-  color: #fff;
-  padding: 2px 6px;
-  border-radius: 6px;
-  letter-spacing: 0.5px;
+.file-card-eye:active {
+  background: rgba(0,0,0,0.75);
 }
 
 .file-card-info {
-  padding: 10px 10px 8px;
+  padding: 10px 10px 32px;
   flex: 1;
 }
 

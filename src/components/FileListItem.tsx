@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { IonIcon, IonRippleEffect } from '@ionic/react';
-import { trashOutline, playCircleOutline } from 'ionicons/icons';
-import { TgFile, formatBytes, getThumbnail } from '../services/telegram';
-import FileTypeIcon from './FileTypeIcon';
+import { trashOutline, eyeOutline } from 'ionicons/icons';
+import { TgFile, formatBytes } from '../services/telegram';
+import FileIcon, { getMimeFromFile } from './FileIcon';
 import './FileListItem.css';
 
 interface Props {
@@ -12,49 +12,38 @@ interface Props {
 }
 
 const FileListItem: React.FC<Props> = ({ file, onClick, onDelete }) => {
-  const isMedia = file.mimeType.startsWith('image/') || file.mimeType.startsWith('video/');
-  const isVideo = file.mimeType.startsWith('video/');
+  const mime = getMimeFromFile(file.name, file.mimeType);
+  const isMedia = mime.startsWith('image/') || mime.startsWith('video/');
   const date = new Date(file.date * 1000).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-
-  const [thumb, setThumb] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!isMedia) return;
-    let cancelled = false;
-    getThumbnail(file)
-      .then(url => { if (!cancelled) setThumb(url); })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, [file.id]);
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
     onDelete();
   };
 
+  const handleEye = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onClick();
+  };
+
   return (
-    <div className="file-list-item ion-activatable" onClick={onClick}>
+    <div className="file-list-item ion-activatable">
       <IonRippleEffect />
 
       <div className="fli-icon-wrap">
-        {thumb ? (
-          <div className="fli-thumb-wrap">
-            <img src={thumb} alt={file.name} className="fli-thumb-img" />
-            {isVideo && (
-              <div className="fli-thumb-play">
-                <IonIcon icon={playCircleOutline} />
-              </div>
-            )}
-          </div>
-        ) : (
-          <FileTypeIcon filename={file.name} mimeType={file.mimeType} size="sm" />
-        )}
+        <FileIcon mime={mime} name={file.name} size={44} />
       </div>
 
       <div className="fli-info">
         <p className="fli-name">{file.name}</p>
         <p className="fli-meta">{formatBytes(file.size)} · {date}</p>
       </div>
+
+      {isMedia && (
+        <button className="fli-eye" onClick={handleEye}>
+          <IonIcon icon={eyeOutline} />
+        </button>
+      )}
 
       <button className="fli-delete" onClick={handleDelete}>
         <IonIcon icon={trashOutline} />

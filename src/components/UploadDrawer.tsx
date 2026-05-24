@@ -1,18 +1,16 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   IonModal, IonContent, IonButton, IonIcon, IonSpinner, IonProgressBar,
 } from '@ionic/react';
-import {
-  cloudUploadOutline, closeOutline, addOutline, trashOutline,
-  documentOutline, documentTextOutline, musicalNotesOutline,
-  videocamOutline, imageOutline, archiveOutline,
-} from 'ionicons/icons';
+import { cloudUploadOutline, closeOutline, addOutline, trashOutline } from 'ionicons/icons';
 import { uploadFile, formatBytes } from '../services/telegram';
+import FileIcon, { getMimeFromFile } from './FileIcon';
 import './UploadDrawer.css';
 
 interface SelectedFile {
   id: string;
   file: File;
+  mime: string;
   preview: string | null;
   status: 'pending' | 'uploading' | 'done' | 'error';
   progress: number;
@@ -26,33 +24,15 @@ interface Props {
   onDone: () => void;
 }
 
-function getIcon(mimeType: string) {
-  if (mimeType.startsWith('image/')) return imageOutline;
-  if (mimeType.startsWith('video/')) return videocamOutline;
-  if (mimeType.startsWith('audio/')) return musicalNotesOutline;
-  if (mimeType === 'application/pdf') return documentTextOutline;
-  if (mimeType.includes('zip') || mimeType.includes('rar') || mimeType.includes('tar')) return archiveOutline;
-  return documentOutline;
-}
-
-function getIconColor(mimeType: string) {
-  if (mimeType.startsWith('image/')) return '#4CAF50';
-  if (mimeType.startsWith('video/')) return '#E91E63';
-  if (mimeType.startsWith('audio/')) return '#9C27B0';
-  if (mimeType === 'application/pdf') return '#F44336';
-  if (mimeType.includes('zip') || mimeType.includes('rar')) return '#FF9800';
-  return '#607D8B';
-}
-
-async function generatePreview(file: File): Promise<string | null> {
-  if (file.type.startsWith('image/')) {
+async function generatePreview(file: File, mime: string): Promise<string | null> {
+  if (mime.startsWith('image/')) {
     return new Promise(resolve => {
       const reader = new FileReader();
       reader.onload = e => resolve(e.target?.result as string);
       reader.readAsDataURL(file);
     });
   }
-  if (file.type.startsWith('video/')) {
+  if (mime.startsWith('video/')) {
     return new Promise(resolve => {
       const video = document.createElement('video');
       video.preload = 'metadata';
@@ -62,10 +42,8 @@ async function generatePreview(file: File): Promise<string | null> {
       video.currentTime = 1;
       video.addEventListener('seeked', () => {
         const canvas = document.createElement('canvas');
-        canvas.width = 160;
-        canvas.height = 90;
-        const ctx = canvas.getContext('2d');
-        ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
+        canvas.width = 160; canvas.height = 90;
+        canvas.getContext('2d')?.drawImage(video, 0, 0, 160, 90);
         URL.revokeObjectURL(url);
         resolve(canvas.toDataURL('image/jpeg', 0.7));
       });
@@ -91,13 +69,17 @@ const UploadDrawer: React.FC<Props> = ({ isOpen, folderId, onClose, onDone }) =>
     if (!picked.length) return;
 
     const newFiles: SelectedFile[] = await Promise.all(
-      picked.map(async (f) => ({
-        id: `${f.name}_${f.size}_${Date.now()}_${Math.random()}`,
-        file: f,
-        preview: await generatePreview(f),
-        status: 'pending' as const,
-        progress: 0,
-      }))
+      picked.map(async (f) => {
+        const mime = getMimeFromFile(f.name, f.type);
+        return {
+          id: `${f.name}_${f.size}_${Date.now()}_${Math.random()}`,
+          file: f,
+          mime,
+          preview: await generatePreview(f, mime),
+          status: 'pending' as const,
+          progress: 0,
+        };
+      })
     );
 
     setFiles(prev => [...prev, ...newFiles]);
@@ -116,7 +98,7 @@ const UploadDrawer: React.FC<Props> = ({ isOpen, folderId, onClose, onDone }) =>
     for (const sf of pending) {
       setFiles(prev => prev.map(f => f.id === sf.id ? { ...f, status: 'uploading' } : f));
       try {
-        await uploadFile(sf.file, folderId, (progress) => {
+        await uploadFile(sf.file, folderId, (progress: number) => {
           setFiles(prev => prev.map(f => f.id === sf.id ? { ...f, progress } : f));
         });
         setFiles(prev => prev.map(f => f.id === sf.id ? { ...f, status: 'done', progress: 100 } : f));
@@ -129,11 +111,7 @@ const UploadDrawer: React.FC<Props> = ({ isOpen, folderId, onClose, onDone }) =>
     setUploading(false);
     const allDone = files.every(f => f.status === 'done' || f.status === 'error');
     if (allDone) {
-      setTimeout(() => {
-        setFiles([]);
-        onDone();
-        onClose();
-      }, 800);
+      setTimeout(() => { setFiles([]); onDone(); onClose(); }, 800);
     }
   };
 
@@ -151,7 +129,6 @@ const UploadDrawer: React.FC<Props> = ({ isOpen, folderId, onClose, onDone }) =>
       handle
     >
       <IonContent className="upload-drawer-content">
-        {/* Header */}
         <div className="ud-header">
           <div className="ud-header-left">
             <IonIcon icon={cloudUploadOutline} className="ud-header-icon" />
@@ -167,36 +144,26 @@ const UploadDrawer: React.FC<Props> = ({ isOpen, folderId, onClose, onDone }) =>
           </button>
         </div>
 
-        {/* Drop zone / add more */}
         <div className="ud-dropzone" onClick={() => inputRef.current?.click()}>
           <IonIcon icon={addOutline} className="ud-dropzone-icon" />
           <p className="ud-dropzone-label">Tap to select files</p>
           <p className="ud-dropzone-hint">Images, videos, PDFs, documents…</p>
         </div>
-        <input
-          ref={inputRef}
-          type="file"
-          multiple
-          style={{ display: 'none' }}
-          onChange={handleFilePick}
-        />
+        <input ref={inputRef} type="file" multiple style={{ display: 'none' }} onChange={handleFilePick} />
 
-        {/* File preview grid */}
         {files.length > 0 && (
           <div className="ud-grid">
             {files.map(sf => (
               <div key={sf.id} className={`ud-card ud-card--${sf.status}`}>
-                {/* Thumbnail */}
                 <div className="ud-thumb">
                   {sf.preview ? (
                     <img src={sf.preview} alt={sf.file.name} className="ud-thumb-img" />
                   ) : (
-                    <div className="ud-thumb-icon" style={{ background: `${getIconColor(sf.file.type)}20` }}>
-                      <IonIcon icon={getIcon(sf.file.type)} style={{ color: getIconColor(sf.file.type) }} />
+                    <div className="ud-thumb-icon">
+                      <FileIcon mime={sf.mime} name={sf.file.name} size={48} />
                     </div>
                   )}
 
-                  {/* Status overlay */}
                   {sf.status === 'uploading' && (
                     <div className="ud-overlay ud-overlay--uploading">
                       <IonSpinner name="crescent" color="light" />
@@ -213,7 +180,6 @@ const UploadDrawer: React.FC<Props> = ({ isOpen, folderId, onClose, onDone }) =>
                     </div>
                   )}
 
-                  {/* Remove button */}
                   {sf.status === 'pending' && (
                     <button className="ud-remove-btn" onClick={() => removeFile(sf.id)}>
                       <IonIcon icon={trashOutline} />
@@ -221,14 +187,12 @@ const UploadDrawer: React.FC<Props> = ({ isOpen, folderId, onClose, onDone }) =>
                   )}
                 </div>
 
-                {/* Progress bar */}
                 {sf.status === 'uploading' && (
                   <IonProgressBar value={sf.progress / 100} color="primary" className="ud-progress" />
                 )}
 
-                {/* File info */}
                 <div className="ud-card-info">
-                  <p className="ud-card-name">{sf.file.name}</p>
+                  <p className="ud-card-name">{sf.file.name || 'Unknown file'}</p>
                   <p className="ud-card-size">
                     {sf.status === 'uploading' ? `${sf.progress}%` :
                      sf.status === 'done' ? 'Uploaded ✓' :
@@ -239,7 +203,6 @@ const UploadDrawer: React.FC<Props> = ({ isOpen, folderId, onClose, onDone }) =>
               </div>
             ))}
 
-            {/* Add more card */}
             <div className="ud-card ud-card--add" onClick={() => inputRef.current?.click()}>
               <div className="ud-thumb ud-thumb--add">
                 <IonIcon icon={addOutline} />
@@ -251,7 +214,6 @@ const UploadDrawer: React.FC<Props> = ({ isOpen, folderId, onClose, onDone }) =>
           </div>
         )}
 
-        {/* Upload button */}
         {pendingCount > 0 && (
           <div className="ud-footer">
             <IonButton

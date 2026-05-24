@@ -75,6 +75,27 @@
   margin: 0;
 }
 
+.fli-eye {
+  background: transparent;
+  border: none;
+  color: rgba(255,255,255,0.5);
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  cursor: pointer;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.fli-eye:active {
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.9);
+}
+
 .fli-delete {
   background: transparent;
   border: none;

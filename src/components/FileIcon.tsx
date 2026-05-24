@@ -1,0 +1,194 @@
+import React from 'react';
+
+export function getMimeFromFile(name: string, type: string): string {
+  if (type && type !== 'application/octet-stream') return type;
+  const ext = name.split('.').pop()?.toLowerCase() || '';
+  const map: Record<string, string> = {
+    jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png',
+    gif: 'image/gif', webp: 'image/webp', bmp: 'image/bmp', svg: 'image/svg+xml',
+    mp4: 'video/mp4', mkv: 'video/x-matroska', avi: 'video/x-msvideo',
+    mov: 'video/quicktime', wmv: 'video/x-ms-wmv', flv: 'video/x-flv',
+    mp3: 'audio/mpeg', wav: 'audio/wav', ogg: 'audio/ogg',
+    flac: 'audio/flac', aac: 'audio/aac', m4a: 'audio/mp4',
+    pdf: 'application/pdf',
+    zip: 'application/zip', rar: 'application/x-rar-compressed',
+    '7z': 'application/x-7z-compressed', tar: 'application/x-tar',
+    gz: 'application/gzip',
+    doc: 'application/msword',
+    docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    xls: 'application/vnd.ms-excel',
+    xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    ppt: 'application/vnd.ms-powerpoint',
+    pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    apk: 'application/vnd.android.package-archive',
+    exe: 'application/x-msdownload',
+    txt: 'text/plain', csv: 'text/csv',
+    json: 'application/json', xml: 'application/xml',
+    html: 'text/html', css: 'text/css',
+    js: 'text/javascript', ts: 'text/typescript',
+    py: 'text/x-python',
+  };
+  return map[ext] || 'application/octet-stream';
+}
+
+interface Props { mime: string; name: string; size?: number }
+
+const FileIcon: React.FC<Props> = ({ mime, name, size = 52 }) => {
+  const ext = name.split('.').pop()?.toLowerCase() || '';
+  const s = size;
+
+  /* IMAGE ─────────────────────────────────────────────────── */
+  if (mime.startsWith('image/') || ['jpg','jpeg','png','gif','webp','bmp','svg','ico'].includes(ext))
+    return (
+      <svg xmlns="http://www.w3.org/2000/svg" width={s} height={s} viewBox="0 0 16 16">
+        <path fill="#26a69a" d="M8.5 6h4l-4-4zM3.875 1H9.5l4 4v8.6c0 .773-.616 1.4-1.375 1.4h-8.25c-.76 0-1.375-.627-1.375-1.4V2.4c0-.777.612-1.4 1.375-1.4M4 13.6h8V8l-2.625 2.8L8 9.4zm1.25-7.7c-.76 0-1.375.627-1.375 1.4s.616 1.4 1.375 1.4c.76 0 1.375-.627 1.375-1.4S6.009 5.9 5.25 5.9"/>
+      </svg>
+    );
+
+  /* VIDEO ─────────────────────────────────────────────────── */
+  if (mime.startsWith('video/') || ['mp4','mkv','avi','mov','wmv','flv','webm'].includes(ext))
+    return (
+      <svg xmlns="http://www.w3.org/2000/svg" width={s} height={s} viewBox="0 0 24 24">
+        <path fill="#ec407a" d="M6 2h8l6 6v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2m7 1.5V9h5.5zM10 13l6 3.5-6 3.5z"/>
+      </svg>
+    );
+
+  /* AUDIO ─────────────────────────────────────────────────── */
+  if (mime.startsWith('audio/') || ['mp3','wav','ogg','flac','aac','m4a','wma','opus'].includes(ext))
+    return (
+      <svg xmlns="http://www.w3.org/2000/svg" width={s} height={s} viewBox="0 0 32 32">
+        <path fill="#ab47bc" d="M16 2a14 14 0 1 0 14 14A14 14 0 0 0 16 2m6 10h-4v8a4 4 0 1 1-4-4 3.96 3.96 0 0 1 2 .555V8h6Z"/>
+      </svg>
+    );
+
+  /* PDF ────────────────────────────────────────────────────── */
+  if (mime.includes('pdf') || ext === 'pdf')
+    return (
+      <svg xmlns="http://www.w3.org/2000/svg" width={s} height={s} viewBox="0 0 24 24">
+        <path fill="#ef5350" d="M13 9h5.5L13 3.5zM6 2h8l6 6v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2m4.93 10.44c.41.9.93 1.64 1.53 2.15l.41.32c-.87.16-2.07.44-3.34.93l-.11.04.5-1.04c.45-.87.78-1.66 1.01-2.4m6.48 3.81c.18-.18.27-.41.28-.66.03-.2-.02-.39-.12-.55-.29-.47-1.04-.69-2.28-.69l-1.29.07-.87-.58c-.63-.52-1.2-1.43-1.6-2.56l.04-.14c.33-1.33.64-2.94-.02-3.6a.85.85 0 0 0-.61-.24h-.24c-.37 0-.7.39-.79.77-.37 1.33-.15 2.06.22 3.27v.01c-.25.88-.57 1.9-1.08 2.93l-.96 1.8-.89.49c-1.2.75-1.77 1.59-1.88 2.12-.04.19-.02.36.05.54l.03.05.48.31.44.11c.81 0 1.73-.95 2.97-3.07l.18-.07c1.03-.33 2.31-.56 4.03-.75 1.03.51 2.24.74 3 .74.44 0 .74-.11.91-.3m-.41-.71.09.11c-.01.1-.04.11-.09.13h-.04l-.19.02c-.46 0-1.17-.19-1.9-.51.09-.1.13-.1.23-.1 1.4 0 1.8.25 1.9.35M7.83 17c-.65 1.19-1.24 1.85-1.69 2 .05-.38.5-1.04 1.21-1.69zm3.02-6.91c-.23-.9-.24-1.63-.07-2.05l.07-.12.15.05c.17.24.19.56.09 1.1l-.03.16-.16.82z"/>
+      </svg>
+    );
+
+  /* APK / Android ─────────────────────────────────────────── */
+  if (mime.includes('android') || mime.includes('apk') || ext === 'apk')
+    return (
+      <svg xmlns="http://www.w3.org/2000/svg" width={s} height={s} viewBox="0 0 32 32">
+        <rect width="4" height="10" x="2" y="12" fill="#8bc34a" rx="2"/>
+        <rect width="4" height="10" x="26" y="12" fill="#8bc34a" rx="2"/>
+        <path fill="#8bc34a" d="M8 12h16v12H8zm2 12h4v4a2 2 0 0 1-2 2 2 2 0 0 1-2-2zm8 0h4v4a2 2 0 0 1-2 2 2 2 0 0 1-2-2zm3.545-19.759 2.12-2.12A1 1 0 0 0 22.251.707l-2.326 2.326a7.97 7.97 0 0 0-7.85 0L9.75.707a1 1 0 1 0-1.414 1.414l2.12 2.12A7.97 7.97 0 0 0 8 10h16a7.97 7.97 0 0 0-2.455-5.759M14 8h-2V6h2Zm6 0h-2V6h2Z"/>
+      </svg>
+    );
+
+  /* ZIP / Archive ─────────────────────────────────────────── */
+  if (mime.includes('zip') || mime.includes('rar') || mime.includes('7z') ||
+      mime.includes('tar') || mime.includes('gzip') || mime.includes('archive') ||
+      ['zip','rar','7z','tar','gz','bz2','xz'].includes(ext))
+    return (
+      <svg xmlns="http://www.w3.org/2000/svg" width={s} height={s} viewBox="0 0 32 32">
+        <path fill="#ff9800" d="m24 6 2 6h-4l-2-6h-3l2 6h-4l-2-6h-3l2 6H8L6 6H5a3 3 0 0 0-3 3v14a3 3 0 0 0 3 3h22a3 3 0 0 0 3-3V6Z"/>
+      </svg>
+    );
+
+  /* WORD ──────────────────────────────────────────────────── */
+  if (mime.includes('word') || mime.includes('officedocument.wordprocessing') ||
+      ['doc','docx'].includes(ext))
+    return (
+      <svg xmlns="http://www.w3.org/2000/svg" width={s} height={s} viewBox="0 0 24 24">
+        <path fill="#01579b" d="M6 2h8l6 6v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2m7 1.5V9h5.5zM7 13l1.5 7h2l1.5-3 1.5 3h2l1.5-7h1v-2h-4v2h1l-.9 4.2L13 15h-2l-1.1 2.2L9 13h1v-2H6v2z"/>
+      </svg>
+    );
+
+  /* EXCEL ─────────────────────────────────────────────────── */
+  if (mime.includes('spreadsheet') || mime.includes('excel') ||
+      ['xls','xlsx','ods'].includes(ext))
+    return (
+      <svg xmlns="http://www.w3.org/2000/svg" width={s} height={s} viewBox="0 0 24 24">
+        <path fill="#2e7d32" d="M6 2h8l6 6v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2m7 1.5V9h5.5zM9 11l2.5 3.5L9 18h2l1.5-2.1L14 18h2l-2.5-3.5L16 11h-2l-1.5 2.1L11 11z"/>
+      </svg>
+    );
+
+  /* POWERPOINT ────────────────────────────────────────────── */
+  if (mime.includes('presentation') || mime.includes('powerpoint') ||
+      ['ppt','pptx','odp'].includes(ext))
+    return (
+      <svg xmlns="http://www.w3.org/2000/svg" width={s} height={s} viewBox="0 0 24 24">
+        <path fill="#e64a19" d="M6 2h8l6 6v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2m7 1.5V9h5.5zM8 11v2h1v6H8v1h4v-1h-1v-2h2a3 3 0 0 0 3-3 3 3 0 0 0-3-3zm5 2a1 1 0 0 1 1 1 1 1 0 0 1-1 1h-2v-2z"/>
+      </svg>
+    );
+
+  /* JAVASCRIPT ────────────────────────────────────────────── */
+  if (['js','jsx','mjs'].includes(ext) || mime.includes('javascript'))
+    return (
+      <svg xmlns="http://www.w3.org/2000/svg" width={s} height={s} viewBox="0 0 16 16">
+        <path fill="#ffca28" d="M2 2v12h12V2zm6 6h1v4a1.003 1.003 0 0 1-1 1H7a1.003 1.003 0 0 1-1-1v-1h1v1h1zm3 0h2v1h-2v1h1a1.003 1.003 0 0 1 1 1v1a1.003 1.003 0 0 1-1 1h-2v-1h2v-1h-1a1.003 1.003 0 0 1-1-1V9a1.003 1.003 0 0 1 1-1"/>
+      </svg>
+    );
+
+  /* TYPESCRIPT ────────────────────────────────────────────── */
+  if (['ts','tsx'].includes(ext) || mime.includes('typescript'))
+    return (
+      <svg xmlns="http://www.w3.org/2000/svg" width={s} height={s} viewBox="0 0 16 16">
+        <path fill="#0288d1" d="M2 2v12h12V2zm4 6h3v1H8v4H7V9H6zm5 0h2v1h-2v1h1a1.003 1.003 0 0 1 1 1v1a1.003 1.003 0 0 1-1 1h-2v-1h2v-1h-1a1.003 1.003 0 0 1-1-1V9a1.003 1.003 0 0 1 1-1"/>
+      </svg>
+    );
+
+  /* PYTHON ─────────────────────────────────────────────────── */
+  if (['py','pyw'].includes(ext) || mime.includes('python'))
+    return (
+      <svg xmlns="http://www.w3.org/2000/svg" width={s} height={s} viewBox="0 0 24 24">
+        <path fill="#0288d1" d="M9.86 2A2.86 2.86 0 0 0 7 4.86v1.68h4.29c.39 0 .71.57.71.96H4.86A2.86 2.86 0 0 0 2 10.36v3.781a2.86 2.86 0 0 0 2.86 2.86h1.18v-2.68a2.85 2.85 0 0 1 2.85-2.86h5.25c1.58 0 2.86-1.271 2.86-2.851V4.86A2.86 2.86 0 0 0 14.14 2zm-.72 1.61c.4 0 .72.12.72.71s-.32.891-.72.891c-.39 0-.71-.3-.71-.89s.32-.711.71-.711"/>
+        <path fill="#fdd835" d="M17.959 7v2.68a2.85 2.85 0 0 1-2.85 2.859H9.86A2.85 2.85 0 0 0 7 15.389v3.75a2.86 2.86 0 0 0 2.86 2.86h4.28A2.86 2.86 0 0 0 17 19.14v-1.68h-4.291c-.39 0-.709-.57-.709-.96h7.14A2.86 2.86 0 0 0 22 13.64V9.86A2.86 2.86 0 0 0 19.14 7zM8.32 11.513l-.004.004.038-.004zm6.54 7.276c.39 0 .71.3.71.89a.71.71 0 0 1-.71.71c-.4 0-.72-.12-.72-.71s.32-.89.72-.89"/>
+      </svg>
+    );
+
+  /* HTML ───────────────────────────────────────────────────── */
+  if (['html','htm'].includes(ext) || mime.includes('html'))
+    return (
+      <svg xmlns="http://www.w3.org/2000/svg" width={s} height={s} viewBox="0 0 32 32">
+        <path fill="#e65100" d="m4 4 2 22 10 2 10-2 2-22Zm19.72 7H11.28l.29 3h11.86l-.802 9.335L15.99 25l-6.635-1.646L8.93 19h3.02l.19 2 3.86.77 3.84-.77.29-4H8.84L8 8h16Z"/>
+      </svg>
+    );
+
+  /* CSS ────────────────────────────────────────────────────── */
+  if (['css','scss','sass','less'].includes(ext) || mime.includes('css'))
+    return (
+      <svg xmlns="http://www.w3.org/2000/svg" width={s} height={s} viewBox="0 0 32 32">
+        <path fill="#7e57c2" d="M24 4H4v20a4 4 0 0 0 4 4h16.16A3.84 3.84 0 0 0 28 24.16V8a4 4 0 0 0-4-4m-4 14h-2v-2h-2v2c0 .193 0 .703 1.254 1.033A3.345 3.345 0 0 1 20 22h2v2h2v-2c0-.388-.562-.851-1.254-1.034C20.356 20.34 20 18.84 20 18m-3.254 2.966C14.356 20.34 14 18.84 14 18h-2v-2h-2v8h2v-2h4v2h2v-2c0-.388-.562-.851-1.254-1.034"/>
+      </svg>
+    );
+
+  /* JSON ───────────────────────────────────────────────────── */
+  if (['json','jsonc'].includes(ext) || mime.includes('json'))
+    return (
+      <svg xmlns="http://www.w3.org/2000/svg" width={s} height={s} viewBox="0 -960 960 960">
+        <path fill="#f9a825" d="M560-160v-80h120q17 0 28.5-11.5T720-280v-80q0-38 22-69t58-44v-14q-36-13-58-44t-22-69v-80q0-17-11.5-28.5T680-720H560v-80h120q50 0 85 35t35 85v80q0 17 11.5 28.5T840-560h40v160h-40q-17 0-28.5 11.5T800-360v80q0 50-35 85t-85 35zm-280 0q-50 0-85-35t-35-85v-80q0-17-11.5-28.5T120-400H80v-160h40q17 0 28.5-11.5T160-600v-80q0-50 35-85t85-35h120v80H280q-17 0-28.5 11.5T240-680v80q0 38-22 69t-58 44v14q36 13 58 44t22 69v80q0 17 11.5 28.5T280-240h120v80z"/>
+      </svg>
+    );
+
+  /* CODE (generic) ────────────────────────────────────────── */
+  if (mime.includes('xml') || mime.includes('javascript') || mime.includes('typescript') ||
+      mime.includes('python') || ['xml','go','rs','c','cpp','h','cs','php','rb','sh','bash',
+      'java','kt','swift','vue','svelte'].includes(ext))
+    return (
+      <svg xmlns="http://www.w3.org/2000/svg" width={s} height={s} viewBox="0 0 24 24">
+        <path fill="#5c6bc0" d="M6 2h8l6 6v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2m7 1.5V9h5.5zM9 13.41 10.41 12 9 10.59 7.59 12zm6 0L16.41 12 15 10.59 13.59 12zM10 13l-3 3 3 3v-2l1.5-1L10 15zm4 0v2l-1.5 1 1.5 1v2l3-3z"/>
+      </svg>
+    );
+
+  /* TEXT / CSV ─────────────────────────────────────────────── */
+  if (mime.startsWith('text/') || ['txt','log','csv','md','rst','ini','cfg','conf','env'].includes(ext))
+    return (
+      <svg xmlns="http://www.w3.org/2000/svg" width={s} height={s} viewBox="0 0 24 24">
+        <path fill="#42a5f5" d="M8 16h8v2H8zm0-4h8v2H8zm6-10H6c-1.1 0-2 .9-2 2v16c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8zm4 18H6V4h7v5h5z"/>
+      </svg>
+    );
+
+  /* GENERIC ───────────────────────────────────────────────── */
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={s} height={s} viewBox="0 0 24 24">
+      <path fill="#78909c" d="M6 2h8l6 6v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2m7 1.5V9h5.5zM8 14h8v2H8zm0 4h6v2H8z"/>
+    </svg>
+  );
+};
+
+export default FileIcon;

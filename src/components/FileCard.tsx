@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { IonIcon, IonRippleEffect } from '@ionic/react';
-import { trashOutline } from 'ionicons/icons';
-import { TgFile, formatBytes, getThumbnail } from '../services/telegram';
-import FileTypeIcon from './FileTypeIcon';
+import { trashOutline, eyeOutline } from 'ionicons/icons';
+import { TgFile, formatBytes } from '../services/telegram';
+import FileIcon, { getMimeFromFile } from './FileIcon';
 import './FileCard.css';
 
 interface FileCardProps {
@@ -12,20 +12,8 @@ interface FileCardProps {
 }
 
 const FileCard: React.FC<FileCardProps> = ({ file, onClick, onDelete }) => {
-  const isMedia = file.mimeType.startsWith('image/') || file.mimeType.startsWith('video/');
-  const isVideo = file.mimeType.startsWith('video/');
-
-  const [thumb, setThumb] = useState<string | null>(null);
-  const [loading, setLoading] = useState(isMedia);
-
-  useEffect(() => {
-    if (!isMedia) return;
-    let cancelled = false;
-    getThumbnail(file)
-      .then(url => { if (!cancelled) { setThumb(url); setLoading(false); } })
-      .catch(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  }, [file.id]);
+  const mime = getMimeFromFile(file.name, file.mimeType);
+  const isMedia = mime.startsWith('image/') || mime.startsWith('video/');
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -33,19 +21,15 @@ const FileCard: React.FC<FileCardProps> = ({ file, onClick, onDelete }) => {
   };
 
   return (
-    <div className="file-card ion-activatable" onClick={onClick}>
+    <div className="file-card ion-activatable">
       <IonRippleEffect />
 
       <div className="file-card-thumb">
-        {thumb ? (
-          <>
-            <img src={thumb} alt={file.name} className="file-card-thumb-img" />
-            {isVideo && <div className="file-card-play-badge">▶</div>}
-          </>
-        ) : loading ? (
-          <div className="file-card-shimmer" />
-        ) : (
-          <FileTypeIcon filename={file.name} mimeType={file.mimeType} size="lg" />
+        <FileIcon mime={mime} name={file.name} size={64} />
+        {isMedia && (
+          <button className="file-card-eye" onClick={onClick}>
+            <IonIcon icon={eyeOutline} />
+          </button>
         )}
       </div>
 
